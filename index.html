@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Smart Home Control Interface - ESP32 MQTT Web Controller">
+    <meta name="author" content="Smart Home Thesis Project">
+    <title>Smart Home Control Interface</title>
+    
+    <!-- External Stylesheets -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Chart.js for real-time graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- MQTT.js library for WebSocket MQTT connection -->
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header Section -->
+        <header>
+            <div>
+                <h1>🏠 Smart Home Control</h1>
+                <p>ESP32 MQTT-Based Home Automation System</p>
+            </div>
+            <div class="connection-status">
+                <div id="statusIndicator" class="status-indicator"></div>
+                <span id="statusText">Disconnected</span>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main>
+            <!-- Floor Plan Section -->
+            <section id="floorplan-section">
+                <h2>📐 Floor Plan</h2>
+                <div class="floor-plan-container">
+                    <!-- Floor plan image (placeholder - replace with your actual floor plan) -->
+                    <img id="floorplanImage" src="floorplan.png" alt="Smart Home Floor Plan" 
+                         onerror="this.style.display='none'; document.getElementById('floorplanPlaceholder').style.display='block';">
+                    
+                    <!-- Placeholder if image not found -->
+                    <div id="floorplanPlaceholder" style="display:none; background: linear-gradient(135deg, #e0e0e0 0%, #f5f5f5 100%); padding: 100px 20px; text-align: center; border-radius: 10px;">
+                        <p style="color: #666; font-size: 1.2em;">📷 Floor plan image not found</p>
+                        <p style="color: #999;">Place your floor plan image as "floorplan.png" in the project folder</p>
+                    </div>
+                    
+                    <!-- SVG Overlay for clickable rooms -->
+                    <svg id="floorplanOverlay" viewBox="0 0 403 691">
+                        <!-- Room overlays -->
+
+                        <!-- �️ Living Room -->
+                        <polygon class="room-overlay" data-room="living"
+                                 points="223,1 226,469 404,465 404,1"/>
+                        <circle class="light-indicator" id="light-living"
+                                cx="314" cy="235" r="8"/>
+
+                        <!-- �️ Bedroom -->
+                        <polygon class="room-overlay" data-room="bedroom"
+                                 points="3,468 222,470 223,689 2,692"/>
+                        <circle class="light-indicator" id="light-bedroom"
+                                cx="112" cy="580" r="8"/>
+
+                        <!-- 🚿 Bathroom -->
+                        <polygon class="room-overlay" data-room="bathroom"
+                                 points="227,581 402,581 404,689 223,689"/>
+                        <circle class="light-indicator" id="light-bathroom"
+                                cx="313" cy="635" r="8"/>
+                        
+                        <!-- 🍳 Kitchen -->
+                        <polygon class="room-overlay" data-room="kitchen"
+                                 points="223,469 403,465 402,582 223,582"/>
+                        <circle class="light-indicator" id="light-kitchen"
+                                cx="313" cy="523" r="8"/>
+                                        
+                        <!-- 🚪 Entry Room -->
+                        <polygon class="room-overlay" data-room="entry"
+                                 points="4,374 223,373 223,470 4,468"/>
+                        <circle class="light-indicator" id="light-entry"
+                                cx="113" cy="421" r="8"/>
+
+                        <!-- � Work Room -->
+                        <polygon class="room-overlay" data-room="work"
+                                 points="2,222 223,222 223,374 1,373"/>
+                        <circle class="light-indicator" id="light-work"
+                                cx="112" cy="298" r="8"/>
+
+                        <!-- 🚗 Garage -->
+                        <polygon class="room-overlay" data-room="garage"
+                                 points="2,2 223,3 225,223 3,221"/>
+                        <circle class="light-indicator" id="light-garage"
+                                cx="113" cy="112" r="8"/>
+
+                        <!-- Car indicator in garage (shown when car detected) -->
+                        <g id="carIndicator" style="display: none;">
+                            <rect x="93" y="82" width="40" height="60" rx="5"
+                                  fill="#3498db" stroke="#2c3e50" stroke-width="2"/>
+                            <circle cx="103" cy="137" r="6" fill="#2c3e50"/>
+                            <circle cx="123" cy="137" r="6" fill="#2c3e50"/>
+                            <rect x="98" y="87" width="30" height="20" rx="2"
+                            fill="#5dade2" opacity="0.7"/>
+                        </g>
+                    </svg>
+                </div>
+                
+                <!-- Debug Info Box -->
+                <div style="margin-top: 20px; padding: 15px; background: #f0f0f0; border-radius: 10px; border: 2px solid #667eea;">
+                    <h3 style="margin: 0 0 10px 0; color: #667eea;">🐛 Debug Info:</h3>
+                    <div style="background: white; padding: 10px; border-radius: 5px; font-family: monospace;">
+                        <strong>Last Clicked Room:</strong> <span id="debugRoom" style="color: #e74c3c;">None</span>
+                    </div>
+                    <div style="background: white; padding: 10px; border-radius: 5px; font-family: monospace; margin-top: 10px;">
+                        <strong>Room Status:</strong> <span id="debugStatus" style="color: #666;">Click a room on the floor plan</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Control Panels Section -->
+            <section id="controls-section">
+                <h2>🎛️ Controls</h2>
+                <div class="panel-grid">
+                    
+                    <!-- Living Room Control Panel -->
+                    <div class="control-card">
+                        <h3>🛋️ Living Room</h3>
+                        <div class="control-group">
+                            <label>
+                                <span>💡 Light:</span>
+                                <button id="btn-light-living" class="toggle-btn" data-state="off">OFF</button>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Bedroom Control Panel -->
+                    <div class="control-card bedroom-card">
+                        <h3>🛏️ Bedroom</h3>
+                        <div class="control-group">
+                            <label>
+                                <span>💡 Light:</span>
+                                <button id="btn-light-bedroom" class="toggle-btn" data-state="off">OFF</button>
+                            </label>
+                            <label>
+                                <span>🌀 Fan (AC):</span>
+                                <button id="btn-fan-bedroom" class="toggle-btn" data-state="off">OFF</button>
+                            </label>
+                        </div>
+                        <div class="sensor-data">
+                            <div class="sensor-item">
+                                <span>🌡️ Temperature:</span>
+                                <strong id="temp-bedroom">--°C</strong>
+                            </div>
+                            <div class="sensor-item">
+                                <span>💧 Humidity:</span>
+                                <strong id="humidity-bedroom">--%</strong>
+                            </div>
+                            <div class="sensor-item">
+                                <span>🚶 Motion:</span>
+                                <strong id="motion-bedroom" class="motion-indicator">No Motion</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bathroom Control Panel -->
+                    <div class="control-card">
+                        <h3>🚿 Bathroom</h3>
+                        <div class="control-group">
+                            <label>
+                                <span>💡 Light:</span>
+                                <button id="btn-light-bathroom" class="toggle-btn" data-state="off">OFF</button>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Kitchen Control Panel -->
+                    <div class="control-card">
+                        <h3>🍳 Kitchen</h3>
+                        <div class="control-group">
+                            <label>
+                                <span>💡 Light:</span>
+                                <button id="btn-light-kitchen" class="toggle-btn" data-state="off">OFF</button>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Entry Room Control Panel -->
+                    <div class="control-card">
+                        <h3>🚪 Entry Room</h3>
+                        <div class="control-group">
+                            <label>
+                                <span>� Light:</span>
+                                <button id="btn-light-entry" class="toggle-btn" data-state="off">OFF</button>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Work Room Control Panel -->
+                    <div class="control-card">
+                        <h3>� Work Room</h3>
+                        <div class="control-group">
+                            <label>
+                                <span>💡 Light:</span>
+                                <button id="btn-light-work" class="toggle-btn" data-state="off">OFF</button>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Garage Control Panel -->
+                    <div class="control-card">
+                        <h3>🚗 Garage</h3>
+                        <div class="control-group">
+                            <label>
+                                <span>💡 Light:</span>
+                                <button id="btn-light-garage" class="toggle-btn" data-state="off">OFF</button>
+                            </label>
+                            <label>
+                                <span>� Door:</span>
+                                <button id="btn-door-garage" class="toggle-btn" data-state="closed">CLOSED</button>
+                            </label>
+                        </div>
+                        <div class="sensor-data">
+                            <div class="sensor-item">
+                                <span>🚗 Car Status:</span>
+                                <strong id="car-status">Not Detected</strong>
+                            </div>
+                            <div class="sensor-item">
+                                <span>📏 Distance:</span>
+                                <strong id="car-distance">-- cm</strong>
+                            </div>
+                            <div class="sensor-item">
+                                <span>🔒 Door Sensor:</span>
+                                <strong id="door-sensor">Closed</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Brightness Sensor Section -->
+            <section id="brightness-section">
+                <h2>☀️ Ambient Light Sensor</h2>
+                <div class="control-card">
+                    <div class="sensor-item">
+                        <span>Current Brightness:</span>
+                        <strong id="brightness-current">-- lux</strong>
+                    </div>
+                    <div class="brightness-bar">
+                        <div id="brightness-fill" class="brightness-fill" style="width: 0%;"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Security System Section -->
+            <section id="security-section">
+                <h2>🔐 Security System</h2>
+                <div class="control-card security-card">
+                    <div class="security-status">
+                        <div class="sensor-item">
+                            <span>Lock Status:</span>
+                            <strong id="lock-status" class="status-unlocked">UNLOCKED</strong>
+                        </div>
+                        <div class="sensor-item">
+                            <span>Alarm:</span>
+                            <strong id="alarm-status" class="alarm-off">OFF</strong>
+                        </div>
+                    </div>
+                    
+                    <div class="keypad-container">
+                        <div class="keypad-display">
+                            <input type="password" id="pin-display" maxlength="4" readonly placeholder="Enter PIN">
+                            <span id="pin-feedback" class="pin-feedback"></span>
+                        </div>
+                        <div class="keypad-grid">
+                            <button class="keypad-btn" data-digit="1">1</button>
+                            <button class="keypad-btn" data-digit="2">2</button>
+                            <button class="keypad-btn" data-digit="3">3</button>
+                            <button class="keypad-btn" data-digit="4">4</button>
+                            <button class="keypad-btn" data-digit="5">5</button>
+                            <button class="keypad-btn" data-digit="6">6</button>
+                            <button class="keypad-btn" data-digit="7">7</button>
+                            <button class="keypad-btn" data-digit="8">8</button>
+                            <button class="keypad-btn" data-digit="9">9</button>
+                            <button class="keypad-btn clear-btn" data-digit="clear">Clear</button>
+                            <button class="keypad-btn" data-digit="0">0</button>
+                            <button class="keypad-btn enter-btn" data-digit="enter">Enter</button>
+                        </div>
+                    </div>
+
+                    <div class="lock-controls">
+                        <button id="btn-lock" class="lock-btn">🔒 Lock House</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Real-time Charts Section -->
+            <section id="charts-section">
+                <h2>📊 Real-time Monitoring</h2>
+                <div class="charts-grid">
+                    <div class="chart-container">
+                        <h3>🌡️ Temperature History</h3>
+                        <canvas id="tempChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h3>💧 Humidity History</h3>
+                        <canvas id="humidityChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h3>☀️ Brightness History</h3>
+                        <canvas id="brightnessChart"></canvas>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer>
+            <p>Smart Home Control System | ESP32 WROOM | MQTT Protocol</p>
+            <p>Thesis Project 2025 | Real-time Monitoring & Control</p>
+        </footer>
+    </div>
+
+    <!-- External JavaScript -->
+    <script src="script.js"></script>
+</body>
+</html>

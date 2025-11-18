@@ -1,0 +1,488 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #1fbb00 0%, #640d9e 100%);
+    color: #333;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    overflow: hidden;
+}
+
+header {
+    background: linear-gradient(165deg, #1fbb00 0%, #640d9e 100%); 
+    color: white;
+    padding: 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+header h1 {
+    font-size: 2em;
+    margin-bottom: 10px;
+}
+
+.connection-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255,255,255,0.2);
+    padding: 10px 20px;
+    border-radius: 25px;
+}
+
+.status-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #ff6b6b;
+    animation: pulse 2s infinite;
+}
+
+.status-indicator.connected {
+    background: #51cf66;
+    animation: none;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+main {
+    padding: 30px;
+}
+
+section {
+    margin-bottom: 40px;
+}
+
+h2 {
+    color: #667eea;
+    margin-bottom: 20px;
+    font-size: 1.8em;
+    border-bottom: 3px solid #667eea;
+    padding-bottom: 10px;
+}
+
+/* Floor Plan Styles */
+.floor-plan-container {
+    position: relative;
+    max-width: 600px;
+    margin: 0 auto;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+#floorplanImage {
+    width: 100%;
+    display: block;
+}
+
+#floorplanOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.room-overlay {
+    fill: rgba(102, 126, 234, 0.1);
+    stroke: rgba(102, 126, 234, 0.3);
+    stroke-width: 2;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.room-overlay:hover {
+    fill: rgba(102, 126, 234, 0.3);
+    stroke: rgba(102, 126, 234, 0.8);
+}
+
+.room-active {
+    stroke: #ffd43b;
+    stroke-width: 3;
+}
+
+.light-indicator {
+    fill: #aaa;
+    transition: all 0.3s;
+    pointer-events: none;
+}
+
+.light-indicator.on {
+    fill: #ffd43b;
+    filter: drop-shadow(0 0 10px #ffd43b);
+}
+
+/* Control Panel Styles */
+.panel-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.control-card {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    transition: transform 0.3s;
+}
+
+.control-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+
+.bedroom-card {
+    background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+    grid-column: span 2;
+}
+
+.control-card h3 {
+    color: #2d3436;
+    margin-bottom: 20px;
+    font-size: 1.4em;
+}
+
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.control-group label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 500;
+}
+
+.toggle-btn {
+    padding: 10px 25px;
+    border: none;
+    border-radius: 25px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 0.9em;
+    min-width: 80px;
+}
+
+.toggle-btn[data-state="off"],
+.toggle-btn[data-state="closed"] {
+    background: #b2bec3;
+    color: #2d3436;
+}
+
+.toggle-btn[data-state="on"],
+.toggle-btn[data-state="open"] {
+    background: #00b894;
+    color: white;
+    box-shadow: 0 4px 15px rgba(0, 184, 148, 0.4);
+}
+
+.toggle-btn:hover {
+    transform: scale(1.05);
+}
+
+.toggle-btn:active {
+    transform: scale(0.95);
+}
+
+.sensor-data {
+    background: rgba(255,255,255,0.5);
+    padding: 15px;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.sensor-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    background: white;
+    border-radius: 5px;
+}
+
+.sensor-item strong {
+    color: #667eea;
+    font-size: 1.1em;
+}
+
+.motion-indicator {
+    padding: 5px 10px;
+    border-radius: 15px;
+    background: #dfe6e9;
+    color: #2d3436;
+    font-size: 0.9em;
+}
+
+.motion-indicator.detected {
+    background: #ff6b6b;
+    color: white;
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.brightness-bar {
+    width: 100%;
+    height: 30px;
+    background: #dfe6e9;
+    border-radius: 15px;
+    overflow: hidden;
+    margin-top: 10px;
+}
+
+.brightness-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #fdcb6e 0%, #ffd43b 100%);
+    width: 0%;
+    transition: width 0.5s;
+}
+
+/* Security System Styles */
+.security-card {
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.security-status {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.status-unlocked {
+    color: #27ae60;
+    font-weight: bold;
+}
+
+.status-locked {
+    color: #e74c3c;
+    font-weight: bold;
+}
+
+.alarm-off {
+    color: #95a5a6;
+}
+
+.alarm-on {
+    color: #e74c3c;
+    font-weight: bold;
+    animation: pulse 1s infinite;
+}
+
+.keypad-container {
+    margin: 20px 0;
+}
+
+.keypad-display {
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+#pin-display {
+    width: 100%;
+    max-width: 250px;
+    padding: 15px;
+    font-size: 24px;
+    text-align: center;
+    border: 2px solid #3498db;
+    border-radius: 10px;
+    letter-spacing: 10px;
+    background: #ecf0f1;
+}
+
+.pin-feedback {
+    display: block;
+    margin-top: 10px;
+    font-size: 14px;
+    min-height: 20px;
+}
+
+.pin-feedback.success {
+    color: #27ae60;
+}
+
+.pin-feedback.error {
+    color: #e74c3c;
+}
+
+.keypad-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    max-width: 300px;
+    margin: 0 auto;
+}
+
+.keypad-btn {
+    padding: 20px;
+    font-size: 20px;
+    font-weight: bold;
+    border: 2px solid #3498db;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #ffffff 0%, #ecf0f1 100%);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.keypad-btn:hover {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+}
+
+.keypad-btn:active {
+    transform: translateY(0);
+}
+
+.clear-btn {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    color: white;
+    border-color: #c0392b;
+}
+
+.clear-btn:hover {
+    background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
+}
+
+.enter-btn {
+    background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+    color: white;
+    border-color: #229954;
+}
+
+.enter-btn:hover {
+    background: linear-gradient(135deg, #229954 0%, #1e8449 100%);
+}
+
+.lock-controls {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.lock-btn {
+    padding: 15px 40px;
+    font-size: 18px;
+    font-weight: bold;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s;
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    color: white;
+}
+
+.lock-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(231, 76, 60, 0.4);
+}
+
+.lock-btn.locked {
+    background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+    cursor: not-allowed;
+}
+
+.lock-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Charts Styles */
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 25px;
+}
+
+.chart-container {
+    background: #f5f7fa;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.chart-container h3 {
+    color: #2d3436;
+    margin-bottom: 15px;
+    font-size: 1.2em;
+}
+
+footer {
+    background: #2d3436;
+    color: white;
+    text-align: center;
+    padding: 20px;
+    font-size: 0.9em;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    header {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    header h1 {
+        font-size: 1.5em;
+    }
+    
+    .panel-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .bedroom-card {
+        grid-column: span 1;
+    }
+    
+    .charts-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Car Icon Animation */
+.car-icon {
+    animation: carAppear 0.5s ease-in-out;
+}
+
+@keyframes carAppear {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
