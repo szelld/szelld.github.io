@@ -177,6 +177,61 @@
     entry.marker.openPopup();
   }
 
+  // --- Napi útvonalak (polyline overlay-ek, naponta más színnel) ---
+  // Légvonalban kötik össze az adott nap megállóit; a rétegváltóval ki/be kapcsolhatók.
+  if (window.DAY_ROUTES && Array.isArray(window.DAY_ROUTES)) {
+    const overlays = {};
+
+    window.DAY_ROUTES.forEach(function (route) {
+      const latlngs = route.stops.map(function (s) {
+        return [s.lat, s.lng];
+      });
+
+      const group = L.layerGroup();
+
+      L.polyline(latlngs, {
+        color: route.color,
+        weight: 4,
+        opacity: 0.85,
+        dashArray: "8 8",
+      }).addTo(group);
+
+      route.stops.forEach(function (s, i) {
+        const icon = L.divIcon({
+          className: "",
+          html:
+            '<div class="route-stop-num" style="background:' +
+            route.color +
+            '">' +
+            (i + 1) +
+            "</div>",
+          iconSize: [22, 22],
+          iconAnchor: [11, 11],
+        });
+        L.marker([s.lat, s.lng], { icon: icon, title: s.name })
+          .bindTooltip(i + 1 + ". " + s.name, { direction: "top" })
+          .addTo(group);
+      });
+
+      overlays[route.label] = group;
+    });
+
+    const routesControl = L.control.layers(null, overlays, {
+      collapsed: false,
+      position: "topright",
+    });
+    routesControl.addTo(map);
+
+    // Cím a vezérlő tetejére.
+    const container = routesControl.getContainer();
+    if (container) {
+      container.classList.add("routes-control");
+      const title = L.DomUtil.create("div", "routes-ctrl-title");
+      title.textContent = "Napi útvonalak";
+      container.insertBefore(title, container.firstChild);
+    }
+  }
+
   // --- Kereső / szűrő ---
   const searchInput = document.getElementById("search");
   const noResults = document.getElementById("no-results");
