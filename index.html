@@ -1,75 +1,92 @@
 <!DOCTYPE html>
-<html lang="hu">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Barcelona – Látnivalók</title>
-    <meta
-      name="description"
-      content="Barcelona híres látnivalói interaktív térképen – személyes úti tervhez."
-    />
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>szelld.github.io</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #f43f5e;
+      --accent2: #38bdf8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: radial-gradient(circle at top, #1e293b 0%, var(--bg) 60%);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+    h1 { font-weight: 600; margin: 0 0 0.25rem; }
+    p.sub { color: var(--muted); margin: 0 0 2rem; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.25rem;
+      width: 100%;
+      max-width: 900px;
+    }
+    a.card {
+      display: block;
+      background: var(--card);
+      border: 1px solid #334155;
+      border-radius: 14px;
+      padding: 1.5rem;
+      text-decoration: none;
+      color: inherit;
+      transition: transform .15s ease, border-color .15s ease;
+    }
+    a.card:hover { transform: translateY(-3px); border-color: var(--accent2); }
+    a.card.primary { border-color: var(--accent); grid-column: 1 / -1; }
+    a.card.primary:hover { border-color: #fb7185; }
+    .card h2 { margin: 0 0 .5rem; font-size: 1.2rem; }
+    .card p { margin: 0; color: var(--muted); font-size: .95rem; line-height: 1.45; }
+    .tag {
+      display: inline-block;
+      font-size: .75rem;
+      padding: .15rem .5rem;
+      border-radius: 999px;
+      background: #334155;
+      color: var(--muted);
+      margin-bottom: .75rem;
+    }
+    .primary .tag { background: var(--accent); color: white; }
+    footer { margin-top: 3rem; color: var(--muted); font-size: .85rem; }
+  </style>
+</head>
+<body>
+  <h1>szelld.github.io</h1>
+  <p class="sub">Personal projects and tools</p>
 
-    <!-- Leaflet CSS (unpkg CDN) -->
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-      crossorigin=""
-    />
-    <link rel="stylesheet" href="assets/css/style.css" />
-  </head>
-  <body>
-    <header class="site-header">
-      <a class="brand" href="index.html">
-        <span class="dot"></span>
-        <span class="brand-text">Barcelona – Látnivalók</span>
-      </a>
-      <nav class="nav-links">
-        <button
-          id="mobile-toggle"
-          class="mobile-toggle"
-          type="button"
-          aria-label="Lista mutatása/elrejtése"
-        >
-          ☰ Lista
-        </button>
-        <a href="index.html" class="active">Térkép</a>
-        <a href="itinerary.html">Útiterv</a>
-      </nav>
-    </header>
+  <div class="grid">
+    <a class="card primary" href="ecg/">
+      <span class="tag">New</span>
+      <h2>Polar H10 ECG Log Analyser</h2>
+      <p>Load an EDF export from the Polar ECG Analysis app and get interactive ECG strips, heart rate, HRV (time, frequency and nonlinear domain), QRS / QT morphology, ectopic beats and cross-day trends. Everything runs in your browser; nothing is uploaded.</p>
+    </a>
 
-    <div class="layout">
-      <aside class="sidebar" id="sidebar">
-        <div class="sidebar-top">
-          <h1>Látnivalók</h1>
-          <p>Kattints egy helyre a listában vagy a térképen.</p>
-          <div class="search-wrap">
-            <span class="search-icon" aria-hidden="true">🔍</span>
-            <input
-              id="search"
-              type="search"
-              placeholder="Keresés név szerint…"
-              autocomplete="off"
-              aria-label="Látnivaló keresése"
-            />
-          </div>
-          <div class="legend" id="legend" aria-label="Jelmagyarázat"></div>
-        </div>
-        <div class="sight-list" id="sight-list"></div>
-        <div class="no-results" id="no-results" style="display: none">
-          Nincs a keresésnek megfelelő találat.
-        </div>
-      </aside>
+    <a class="card" href="old/barcelona_travel/">
+      <span class="tag">Archive</span>
+      <h2>Barcelona Travel</h2>
+      <p>Interactive sights map and day-by-day itinerary with routes.</p>
+    </a>
 
-      <div id="map"></div>
-    </div>
+    <a class="card" href="old/diploma_floorplan/">
+      <span class="tag">Archive</span>
+      <h2>Diploma Floorplan</h2>
+      <p>Interactive floor plan viewer built for the diploma project.</p>
+    </a>
+  </div>
 
-    <!-- Leaflet JS (unpkg CDN) -->
-    <script
-      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-      crossorigin=""
-    ></script>
-    <script src="assets/js/sights.js"></script>
-    <script src="assets/js/day-routes.js"></script>
-    <script src="assets/js/map.js"></script>
-  </body>
+  <footer>Static site hosted on GitHub Pages.</footer>
+</body>
 </html>

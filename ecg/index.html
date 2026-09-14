@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Polar H10 ECG Log Analyser</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <h1 data-i18n="appTitle">Polar H10 ECG Log Analyser</h1>
+      <p class="sub" data-i18n="appSubtitle"></p>
+    </div>
+    <div class="header-actions">
+      <div class="lang-switch" role="group" aria-label="Language">
+        <button type="button" data-lang="en">EN</button>
+        <button type="button" data-lang="hu">HU</button>
+      </div>
+      <a class="home-link" href="../">szelld.github.io</a>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="sidebar">
+      <div id="dropzone" class="dropzone" tabindex="0">
+        <input type="file" id="fileInput" accept=".edf,.EDF,application/octet-stream" hidden>
+        <strong data-i18n="dropTitle"></strong>
+        <p class="muted small" data-i18n="dropHint"></p>
+      </div>
+      <button id="demoBtn" class="btn primary wide" type="button" data-i18n="loadDemo"></button>
+
+      <div id="progress" class="progress hidden">
+        <div class="bar"><div class="fill"></div></div>
+        <span class="label"></span>
+      </div>
+      <div id="error" class="error hidden"></div>
+
+      <h2 data-i18n="sessions"></h2>
+      <ul id="sessionList" class="session-list"></ul>
+    </aside>
+
+    <section class="content">
+      <nav class="tabs" id="tabs">
+        <button type="button" data-tab="summary" class="active" data-i18n="tabSummary"></button>
+        <button type="button" data-tab="ecg" data-i18n="tabEcg"></button>
+        <button type="button" data-tab="hr" data-i18n="tabHr"></button>
+        <button type="button" data-tab="hrv" data-i18n="tabHrv"></button>
+        <button type="button" data-tab="morph" data-i18n="tabMorph"></button>
+        <button type="button" data-tab="beats" data-i18n="tabBeats"></button>
+        <button type="button" data-tab="trends" data-i18n="tabTrends"></button>
+        <button type="button" data-tab="settings" data-i18n="tabSettings"></button>
+      </nav>
+
+      <div id="placeholder" class="placeholder">
+        <p data-i18n="dropTitle"></p>
+      </div>
+
+      <!-- Summary -->
+      <div id="tab-summary" class="tab hidden">
+        <div class="session-header">
+          <div id="sessionInfo" class="session-info"></div>
+          <div class="actions">
+            <button type="button" id="exportJsonBtn" class="btn" data-i18n="exportJson"></button>
+            <button type="button" id="exportBeatsBtn" class="btn" data-i18n="exportBeatsCsv"></button>
+            <button type="button" id="exportNnBtn" class="btn" data-i18n="exportNnCsv"></button>
+            <button type="button" id="reanalyseBtn" class="btn" data-i18n="reanalyse"></button>
+          </div>
+        </div>
+        <div id="summaryGroups"></div>
+      </div>
+
+      <!-- ECG viewer -->
+      <div id="tab-ecg" class="tab hidden">
+        <div class="ecg-controls">
+          <label><span data-i18n="ecgWindow"></span>
+            <select id="ecgDur">
+              <option value="5">5 s</option>
+              <option value="10" selected>10 s</option>
+              <option value="30">30 s</option>
+              <option value="60">60 s</option>
+              <option value="120">120 s</option>
+              <option value="300">300 s</option>
+            </select>
+          </label>
+          <button type="button" id="ecgPrev" class="btn" data-i18n="ecgPrev"></button>
+          <button type="button" id="ecgNext" class="btn" data-i18n="ecgNext"></button>
+          <label><span data-i18n="ecgJump"></span> <input type="time" id="ecgJumpTime" step="1"></label>
+          <label class="check"><input type="checkbox" id="ecgFiltered" checked> <span data-i18n="ecgFiltered"></span></label>
+          <label class="check"><input type="checkbox" id="ecgBeats" checked> <span data-i18n="ecgShowBeats"></span></label>
+          <label class="check"><input type="checkbox" id="ecgHR" checked> <span data-i18n="ecgShowHR"></span></label>
+          <label class="check"><input type="checkbox" id="ecgFid" checked> <span data-i18n="ecgShowFiducials"></span></label>
+        </div>
+        <div id="ecgPlot" class="plot ecg-plot"></div>
+        <canvas id="ecgNav" class="ecg-nav"></canvas>
+        <p class="muted small" data-i18n="ecgNavigatorHint"></p>
+        <div class="legend-row">
+          <span><i class="dot" style="background:#2563eb"></i> <span data-i18n="legendNormal"></span></span>
+          <span><i class="dot" style="background:#dc2626"></i> <span data-i18n="legendEctopic"></span></span>
+          <span><i class="dot" style="background:#9ca3af"></i> <span data-i18n="legendArtifact"></span></span>
+        </div>
+      </div>
+
+      <!-- Heart rate -->
+      <div id="tab-hr" class="tab hidden">
+        <div id="plotHR" class="plot"></div>
+        <div class="grid2">
+          <div id="plotHrHist" class="plot"></div>
+          <div id="plotZones" class="plot"></div>
+        </div>
+        <div id="plotTachogram" class="plot"></div>
+      </div>
+
+      <!-- HRV -->
+      <div id="tab-hrv" class="tab hidden">
+        <div class="grid2">
+          <div id="plotNnHist" class="plot"></div>
+          <div id="plotPoincare" class="plot"></div>
+        </div>
+        <div id="plotPsd" class="plot"></div>
+        <div id="plotRolling" class="plot"></div>
+        <div id="plotRollingFreq" class="plot"></div>
+        <div class="grid2">
+          <div id="plotResp" class="plot"></div>
+          <div id="plotEdr" class="plot"></div>
+        </div>
+        <div id="plotIrregularity" class="plot"></div>
+      </div>
+
+      <!-- Morphology -->
+      <div id="tab-morph" class="tab hidden">
+        <div id="plotTemplate" class="plot"></div>
+        <div id="plotQtc" class="plot"></div>
+        <div id="plotQrs" class="plot"></div>
+        <div class="grid2">
+          <div id="plotJ" class="plot"></div>
+          <div id="plotTamp" class="plot"></div>
+        </div>
+      </div>
+
+      <!-- Beats -->
+      <div id="tab-beats" class="tab hidden">
+        <h3 data-i18n="beatsTableTitle"></h3>
+        <p class="muted small" data-i18n="beatsTableHint"></p>
+        <div class="table-wrap"><table id="beatsTable"></table></div>
+      </div>
+
+      <!-- Trends -->
+      <div id="tab-trends" class="tab hidden">
+        <h3 data-i18n="trendsTitle"></h3>
+        <p class="muted small" data-i18n="trendsHint"></p>
+        <div id="trendsRoot"></div>
+      </div>
+
+      <!-- Settings -->
+      <div id="tab-settings" class="tab hidden">
+        <h3 data-i18n="settingsTitle"></h3>
+        <p class="muted small" data-i18n="settingsHint"></p>
+        <form id="settingsForm" class="settings-form">
+          <label><span data-i18n="setAge"></span><input type="number" id="setAge" min="1" max="120"><small class="muted" data-i18n="setAgeHint"></small></label>
+          <label><span data-i18n="setSex"></span>
+            <select id="setSex">
+              <option value="" data-i18n="sexU"></option>
+              <option value="M" data-i18n="sexM"></option>
+              <option value="F" data-i18n="sexF"></option>
+            </select>
+          </label>
+          <label><span data-i18n="setHrMax"></span><input type="number" id="setHrMax" min="100" max="240"></label>
+          <label><span data-i18n="setQtc"></span>
+            <select id="setQtc">
+              <option value="bazett">Bazett</option>
+              <option value="fridericia">Fridericia</option>
+              <option value="framingham">Framingham</option>
+              <option value="hodges">Hodges</option>
+            </select>
+          </label>
+          <label><span data-i18n="setTachy"></span><input type="number" id="setTachy" min="80" max="250"></label>
+          <label><span data-i18n="setBrady"></span><input type="number" id="setBrady" min="20" max="80"></label>
+          <label><span data-i18n="setLanguage"></span>
+            <select id="setLang">
+              <option value="en">English</option>
+              <option value="hu">Magyar</option>
+            </select>
+          </label>
+          <button type="submit" class="btn primary" data-i18n="save"></button>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <p class="disclaimer" data-i18n="disclaimer"></p>
+    <p class="muted small" data-i18n="footer"></p>
+  </footer>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
