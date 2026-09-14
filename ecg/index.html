@@ -26,7 +26,7 @@
   <main class="layout">
     <aside class="sidebar">
       <div id="dropzone" class="dropzone" tabindex="0">
-        <input type="file" id="fileInput" accept=".edf,.EDF,application/octet-stream" hidden>
+        <input type="file" id="fileInput" accept=".edf,.EDF,.xml,.XML,application/octet-stream" multiple hidden>
         <strong data-i18n="dropTitle"></strong>
         <p class="muted small" data-i18n="dropHint"></p>
       </div>
@@ -44,7 +44,8 @@
 
     <section class="content">
       <nav class="tabs" id="tabs">
-        <button type="button" data-tab="summary" class="active" data-i18n="tabSummary"></button>
+        <button type="button" data-tab="findings" class="active" data-i18n="tabFindings"></button>
+        <button type="button" data-tab="summary" data-i18n="tabSummary"></button>
         <button type="button" data-tab="ecg" data-i18n="tabEcg"></button>
         <button type="button" data-tab="hr" data-i18n="tabHr"></button>
         <button type="button" data-tab="hrv" data-i18n="tabHrv"></button>
@@ -58,6 +59,27 @@
         <p data-i18n="dropTitle"></p>
       </div>
 
+      <!-- Findings -->
+      <div id="tab-findings" class="tab hidden">
+        <div class="session-header">
+          <div>
+            <h2 data-i18n="findingsTitle"></h2>
+            <p class="muted small" data-i18n="findingsHint"></p>
+          </div>
+          <div class="actions">
+            <button type="button" id="printReportBtn" class="btn primary" data-i18n="printReport"></button>
+          </div>
+        </div>
+        <div id="findingsBanner"></div>
+        <div id="findingsList" class="findings-list"></div>
+        <div id="symptomSection"></div>
+        <p class="muted small" data-i18n="screeningNote"></p>
+        <div class="redflags">
+          <strong data-i18n="redFlagsTitle"></strong>
+          <span data-i18n="redFlagsText"></span>
+        </div>
+      </div>
+
       <!-- Summary -->
       <div id="tab-summary" class="tab hidden">
         <div class="session-header">
@@ -69,6 +91,7 @@
             <button type="button" id="reanalyseBtn" class="btn" data-i18n="reanalyse"></button>
           </div>
         </div>
+        <div id="summaryBanner"></div>
         <div id="summaryGroups"></div>
       </div>
 

@@ -71,7 +71,7 @@ export function makeId() {
 
 // settings in localStorage
 const SETTINGS_KEY = 'ecg.settings';
-export const DEFAULT_SETTINGS = { age: null, sex: null, hrMax: null, qtcFormula: 'bazett', tachyBpm: 150, bradyBpm: 50 };
+export const DEFAULT_SETTINGS = { age: null, sex: null, hrMax: null, qtcFormula: 'bazett', tachyBpm: 100, bradyBpm: 60 };
 export function loadSettings() {
   try { return { ...DEFAULT_SETTINGS, ...(JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}')) }; }
   catch { return { ...DEFAULT_SETTINGS }; }

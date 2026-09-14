@@ -20,6 +20,8 @@ export const METRICS = [
   { key: 'bradyPct', group: 'hr', unit: '%', dec: 2 },
   { key: 'tachyEpisodes', group: 'hr', unit: '', dec: 0 },
   { key: 'bradyEpisodes', group: 'hr', unit: '', dec: 0 },
+  { key: 'tachyTime', group: 'hr', unit: 'min', dec: 1 },
+  { key: 'bradyTime', group: 'hr', unit: 'min', dec: 1 },
   { key: 'hrMaxUsed', group: 'hr', unit: 'bpm', dec: 0 },
   { key: 'effortIndex', group: 'hr', unit: '', dec: 0 },
   { key: 'trimp', group: 'hr', unit: '', dec: 0 },
@@ -381,7 +383,7 @@ export function computeMetrics(ctx) {
   const age = settings.age ?? 30;
   const hrMax = settings.hrMax || Math.round(220 - age);
   S.hrMaxUsed = hrMax;
-  const tachyBpm = settings.tachyBpm ?? 150, bradyBpm = settings.bradyBpm ?? 50;
+  const tachyBpm = settings.tachyBpm ?? 100, bradyBpm = settings.bradyBpm ?? 60;
 
   // ---- per-beat HR series (non-artifact beats with valid preceding beat) ----
   const hrT = [], hrV = [], hrType = [], hrIdx = [];
@@ -428,13 +430,15 @@ export function computeMetrics(ctx) {
     S.hi1minHR = hi; S.hi1minTime = hiT; S.lo1minHR = lo; S.lo1minTime = loT;
     series.hr1min = oneMin;
     // tachy / brady
-    let tachy = 0, brady = 0, tE = 0, bE = 0, runT = 0, runB = 0;
+    let tachy = 0, brady = 0, tE = 0, bE = 0, runT = 0, runB = 0, tachySec = 0, bradySec = 0;
     for (const h of hrV) {
-      if (h > tachyBpm) { tachy++; runT++; if (runT === 5) tE++; } else runT = 0;
-      if (h < bradyBpm) { brady++; runB++; if (runB === 5) bE++; } else runB = 0;
+      const rrS = 60 / h;
+      if (h > tachyBpm) { tachy++; tachySec += rrS; runT++; if (runT === 5) tE++; } else runT = 0;
+      if (h < bradyBpm) { brady++; bradySec += rrS; runB++; if (runB === 5) bE++; } else runB = 0;
     }
     S.tachyPct = 100 * tachy / hrV.length; S.bradyPct = 100 * brady / hrV.length;
     S.tachyEpisodes = tE; S.bradyEpisodes = bE;
+    S.tachyTime = tachySec / 60; S.bradyTime = bradySec / 60;
     // zones
     const zoneDefs = [
       { key: 'rest', lo: 0, hi: 0.6 }, { key: 'recovery', lo: 0.6, hi: 0.7 }, { key: 'aerobic', lo: 0.7, hi: 0.8 },

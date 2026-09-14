@@ -4,7 +4,7 @@ import { minMaxDecimate } from './dsp.js';
 import { BEAT_NORMAL, BEAT_ECTOPIC, BEAT_ARTIFACT } from './beats.js';
 
 const COLORS = {
-  normal: '#2563eb', ectopic: '#dc2626', artifact: '#9ca3af', line: '#111827', accent: '#e11d48',
+  normal: '#2563eb', ectopic: '#dc2626', artifact: '#9ca3af', line: '#111827', accent: '#e11d48', event: '#7c3aed',
   zones: ['rgba(148,163,184,0.15)', 'rgba(56,189,248,0.18)', 'rgba(34,197,94,0.18)', 'rgba(250,204,21,0.2)', 'rgba(239,68,68,0.2)'],
   vlf: 'rgba(148,163,184,0.5)', lf: 'rgba(59,130,246,0.5)', hf: 'rgba(16,185,129,0.5)',
 };
@@ -23,6 +23,20 @@ export function baseLayout(over = {}) {
 }
 const dates = (t0, arr) => Array.from(arr, (s) => new Date(t0 + s * 1000));
 const typeColor = (v) => (v === BEAT_NORMAL ? COLORS.normal : v === BEAT_ECTOPIC ? COLORS.ectopic : COLORS.artifact);
+
+// Vertical lines for the user's Event button presses from the export XML.
+function eventShapes(session, opts = {}) {
+  const events = session.events || (session.meta && session.meta.events) || [];
+  const t0 = session.meta.startTime;
+  const shapes = [], annotations = [];
+  for (const ev of events) {
+    if (opts.from !== undefined && (ev.t < opts.from || ev.t > opts.to)) continue;
+    const x = new Date(t0 + ev.t * 1000);
+    shapes.push({ type: 'line', x0: x, x1: x, yref: 'paper', y0: 0, y1: 1, line: { color: COLORS.event, width: 1.5, dash: 'dot' }, layer: 'above' });
+    annotations.push({ x, xref: 'x', y: 1, yref: 'paper', yanchor: 'bottom', text: t('eventMarker'), showarrow: false, font: { size: 9, color: COLORS.event } });
+  }
+  return { shapes, annotations };
+}
 
 function attachJump(el, onJump, t0) {
   if (!onJump) return;
@@ -64,6 +78,8 @@ export function plotHR(el, session, onJump) {
     const a = Math.max(z.loBpm, yLo), b = Math.min(hi, yHi);
     if (b - a > 6) annotations.push({ xref: 'paper', x: 1, xanchor: 'right', y: (a + b) / 2, yref: 'y', text: `${t(zoneNames[i])}: ${(z.seconds / 60).toFixed(0)} ${t('minutes')}`, showarrow: false, font: { size: 10, color: '#475569' }, bgcolor: 'rgba(255,255,255,0.6)' });
   });
+  const evs = eventShapes(session);
+  shapes.push(...evs.shapes); annotations.push(...evs.annotations);
   const layout = baseLayout({ title: { text: t('plotHrTitle'), font: { size: 15 } }, xaxis: { title: t('timeAxis'), gridcolor: '#eef2f7' }, yaxis: { title: t('bpm'), range: [yLo, yHi], gridcolor: '#eef2f7' }, shapes, annotations, height: 420 });
   Plotly.react(el, traces, layout, CONFIG);
   attachJump(el, onJump, t0);
@@ -315,8 +331,10 @@ export class EcgViewer {
     for (let i = w0; i < w1; i++) { const v = sig[i]; if (v < ymin) ymin = v; if (v > ymax) ymax = v; }
     if (!Number.isFinite(ymin)) { ymin = -1000; ymax = 1000; }
     const padY = Math.max(200, (ymax - ymin) * 0.15);
+    const evs = eventShapes(this.session, { from: a, to: b });
     const layout = baseLayout({
-      margin: { l: 60, r: 20, t: 10, b: 40 }, height: 420, dragmode: 'pan', showlegend: false,
+      margin: { l: 60, r: 20, t: 16, b: 40 }, height: 420, dragmode: 'pan', showlegend: false,
+      shapes: evs.shapes, annotations: evs.annotations,
       xaxis: { type: 'date', range: [new Date(t0 + this.start * 1000), new Date(t0 + (this.start + this.dur) * 1000)], gridcolor: '#f3c6c6', dtick: this.dur <= 20 ? 1000 : this.dur <= 60 ? 5000 : 15000, minor: { dtick: this.dur <= 20 ? 200 : 1000, showgrid: true, gridcolor: '#fbe4e4' }, tickformat: '%H:%M:%S', zeroline: false },
       yaxis: { title: t('amplitude'), range: [ymin - padY, ymax + padY], gridcolor: '#f3c6c6', dtick: 500, minor: { dtick: 100, showgrid: true, gridcolor: '#fbe4e4' }, zeroline: false, fixedrange: false },
       plot_bgcolor: '#fffafa',
@@ -366,6 +384,15 @@ export class EcgViewer {
       const x = hr.t[k] / dur * W;
       const sz = hr.type[k] === BEAT_ECTOPIC ? 3 : 1;
       ctx.fillRect(x, yOf(hr.v[k]), sz, sz);
+    }
+    // event markers
+    const events = this.session.events || (this.session.meta && this.session.meta.events) || [];
+    if (events.length) {
+      ctx.strokeStyle = COLORS.event; ctx.lineWidth = 1;
+      for (const ev of events) {
+        const x = Math.round(ev.t / dur * W) + 0.5;
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H - 12); ctx.stroke();
+      }
     }
     // window
     const x0 = this.start / dur * W, x1 = (this.start + this.dur) / dur * W;
