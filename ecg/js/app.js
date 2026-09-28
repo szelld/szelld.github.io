@@ -19,6 +19,7 @@ const $ = (id) => document.getElementById(id);
 const state = {
   current: null,        // { id, meta, result, ecg, settings, header, events, findings }
   sessions: [],
+  loading: false,
   activeTab: 'findings',
   rendered: new Set(),
   ecgViewer: null,
@@ -79,11 +80,13 @@ function parseXmlSafe(xmlText) {
 }
 
 async function analyseBuffer(buffer, fileName, existingId = null, xmlText = null) {
+  if (state.loading) return;   // a duplicated drop event must not start a second analysis
+  state.loading = true;
   clearError();
   setProgress(2, t('stage_parse'));
   let edf;
   try { edf = parseEDF(buffer); }
-  catch (err) { hideProgress(); showError(err.message); return; }
+  catch (err) { hideProgress(); state.loading = false; showError(err.message); return; }
   const sig = edf.header.signals[edf.ecgIndex];
   const ecgUv = toMicrovolts(edf.ecg, edf.unit);
   const settings = effectiveSettings(edf.header);
@@ -93,8 +96,10 @@ async function analyseBuffer(buffer, fileName, existingId = null, xmlText = null
     const result = msg.result;
     const ecg = msg.ecg;
     const startTime = edf.header.startTime ? edf.header.startTime.getTime() : Date.now();
-    const id = existingId || store.makeId();
-    const prev = existingId ? state.sessions.find((s) => s.id === existingId) : null;
+    // loading the same recording again refreshes it in place instead of duplicating it
+    const same = existingId ? null : state.sessions.find((x) => x.fileName === fileName && x.startTime === startTime);
+    const prev = existingId ? state.sessions.find((s) => s.id === existingId) : same;
+    const id = existingId || (same ? same.id : store.makeId());
     const { events, vendorNotes } = parseXmlSafe(xmlText);
     const meta = {
       id, name: prev ? prev.name : fileName.replace(/\.edf$/i, ''), fileName, startTime, duration: result.duration, fs: result.fs,
@@ -113,6 +118,7 @@ async function analyseBuffer(buffer, fileName, existingId = null, xmlText = null
     console.error(err);
     showError(err.message || String(err));
   } finally {
+    state.loading = false;
     hideProgress();
   }
 }
@@ -521,7 +527,8 @@ function bindFileInputs() {
   input.addEventListener('change', () => { loadFiles(input.files); input.value = ''; });
   ['dragenter', 'dragover'].forEach((ev) => dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.add('drag'); }));
   ['dragleave', 'drop'].forEach((ev) => dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.remove('drag'); }));
-  dz.addEventListener('drop', (e) => loadFiles(e.dataTransfer.files));
+  // stopPropagation: the body handler below would otherwise load the same drop again
+  dz.addEventListener('drop', (e) => { e.stopPropagation(); loadFiles(e.dataTransfer.files); });
   document.body.addEventListener('dragover', (e) => e.preventDefault());
   document.body.addEventListener('drop', (e) => { e.preventDefault(); loadFiles(e.dataTransfer.files); });
   $('demoBtn').addEventListener('click', async () => {
@@ -546,7 +553,7 @@ function bindFileInputs() {
 // Accepts the EDF plus, optionally, the annotation XML from the same export.
 async function loadFiles(fileList) {
   const files = Array.from(fileList || []);
-  if (!files.length) return;
+  if (!files.length || state.loading) return;
   const edfFile = files.find((f) => /\.edf$/i.test(f.name));
   const xmlFile = files.find((f) => /\.xml$/i.test(f.name));
   if (!edfFile) {

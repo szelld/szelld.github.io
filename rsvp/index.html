@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RSVP Speed Reader</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <h1>RSVP Speed Reader</h1>
+      <p class="sub">Spritz-style rapid serial visual presentation. Everything runs in your browser; nothing is uploaded.</p>
+    </div>
+    <a class="home-link" href="../index.html">szelld.github.io</a>
+  </header>
+
+  <main>
+    <!-- Input panel -->
+    <section id="inputPanel" class="panel input-panel">
+      <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Choose or drop a PDF file">
+        <input type="file" id="fileInput" accept=".pdf,application/pdf" hidden>
+        <strong>Drop a PDF here or click to choose</strong>
+        <p class="muted small">Text is extracted locally with pdf.js. Scanned (image-only) PDFs contain no text and will not work.</p>
+      </div>
+
+      <div class="or"><span>or paste text</span></div>
+
+      <textarea id="textInput" rows="7" placeholder="Paste or type any text here..."></textarea>
+      <button id="startTextBtn" class="btn primary wide" type="button">Read pasted text</button>
+
+      <div id="progress" class="progress hidden">
+        <div class="bar"><div class="fill"></div></div>
+        <span class="label"></span>
+      </div>
+      <div id="error" class="error hidden"></div>
+    </section>
+
+    <!-- Reader -->
+    <section id="reader" class="reader hidden">
+      <div class="doc-row">
+        <span id="docTitle" class="doc-title muted"></span>
+        <button id="loadOtherBtn" class="btn small-btn" type="button">Load another</button>
+      </div>
+
+      <div id="stage" class="stage" tabindex="0" aria-live="off">
+        <div class="guide guide-top"></div>
+        <div id="reticle" class="reticle">
+          <span id="wBefore" class="before"></span>
+          <span id="wOrp" class="orp"></span>
+          <span id="wAfter" class="after"></span>
+        </div>
+        <div class="guide guide-bottom"></div>
+        <div id="context" class="context"></div>
+      </div>
+
+      <div class="progress-row">
+        <div id="seekBar" class="seek" role="slider" aria-label="Reading position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <div id="seekFill" class="seek-fill"></div>
+        </div>
+        <div class="progress-meta">
+          <span id="posLabel">0 / 0</span>
+          <span id="etaLabel" class="muted"></span>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="transport">
+          <button id="restartBtn" class="btn" type="button" title="Restart (Home)">&#x23EE;&#xFE0E;</button>
+          <button id="backBtn" class="btn" type="button" title="Rewind (Left arrow)">&#x23EA;&#xFE0E; <span id="backAmount"></span></button>
+          <button id="playBtn" class="btn primary play" type="button" title="Play / pause (Space)">Play</button>
+          <button id="fwdBtn" class="btn" type="button" title="Forward (Right arrow)"><span id="fwdAmount"></span> &#x23E9;&#xFE0E;</button>
+        </div>
+
+        <div class="settings">
+          <label class="setting">
+            <span class="setting-label">Speed <output id="wpmOut">300</output> wpm</span>
+            <input type="range" id="wpmRange" min="100" max="1000" step="10" value="300">
+          </label>
+          <label class="setting">
+            <span class="setting-label">Rewind <output id="rewindOut">2</output> s of reading</span>
+            <input type="range" id="rewindRange" min="1" max="5" step="0.5" value="2">
+          </label>
+          <label class="setting">
+            <span class="setting-label">Font size <output id="fontOut">64</output> px</span>
+            <input type="range" id="fontRange" min="28" max="120" step="2" value="64">
+          </label>
+        </div>
+      </div>
+
+      <p class="hints muted small">
+        <kbd>Space</kbd> play / pause &middot;
+        <kbd>&larr;</kbd> / <kbd>&rarr;</kbd> rewind / forward (scaled to speed) &middot;
+        <kbd>Shift</kbd>+<kbd>&larr;</kbd>/<kbd>&rarr;</kbd> one word &middot;
+        <kbd>&uarr;</kbd> / <kbd>&darr;</kbd> speed &plusmn;25 &middot;
+        <kbd>Home</kbd> restart
+      </p>
+    </section>
+  </main>
+
+  <script src="js/orp.js"></script>
+  <script src="js/extract.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
