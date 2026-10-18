@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deepfake Audio Demo | szelld.github.io</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --card-border: #334155;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.15);
+      --success-border: #10b981;
+      --danger: #ef4444;
+      --danger-bg: rgba(239, 68, 68, 0.15);
+      --danger-border: #ef4444;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: radial-gradient(circle at top, #1e293b 0%, var(--bg) 65%);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.5rem 1rem 3rem;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 780px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    header {
+      text-align: center;
+      position: relative;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.85rem;
+      margin-bottom: 0.75rem;
+      padding: 0.35rem 0.65rem;
+      border-radius: 6px;
+      cursor: pointer;
+      position: relative;
+      z-index: 10;
+      transition: color 0.15s, background-color 0.15s;
+    }
+    .back-link:hover {
+      color: var(--accent);
+      background: rgba(56, 189, 248, 0.1);
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.35rem;
+      background: linear-gradient(135deg, #f8fafc 0%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 1rem;
+    }
+
+    /* Stepper */
+    .stepper {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .step-pill {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.45rem 0.9rem;
+      border-radius: 9999px;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      color: var(--muted);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+
+    .step-pill:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    .step-pill.active {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: var(--accent);
+      color: var(--accent);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.2);
+    }
+
+    .step-pill.correct {
+      border-color: var(--success);
+      color: var(--success);
+      background: var(--success-bg);
+    }
+
+    .step-pill.wrong {
+      border-color: var(--danger);
+      color: var(--danger);
+      background: var(--danger-bg);
+    }
+
+    /* Card */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 2rem;
+      box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+      gap: 1.75rem;
+      position: relative;
+    }
+
+    .sample-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .sample-tag {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 700;
+      color: var(--accent);
+      background: rgba(56, 189, 248, 0.1);
+      padding: 0.3rem 0.75rem;
+      border-radius: 6px;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+
+    .score-badge {
+      font-size: 0.95rem;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    /* Player */
+    .player-box {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .waveform-canvas {
+      width: 100%;
+      height: 70px;
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 8px;
+      display: block;
+    }
+
+    .player-controls {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .play-btn {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: none;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1.35rem;
+      transition: transform 0.15s, background-color 0.15s, box-shadow 0.15s;
+      flex-shrink: 0;
+      user-select: none;
+    }
+
+    .play-btn:hover {
+      transform: scale(1.05);
+      background: #7dd3fc;
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+    }
+
+    .progress-bar-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: #334155;
+      border-radius: 999px;
+      position: relative;
+      cursor: pointer;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      border-radius: 999px;
+      transition: width 0.08s linear;
+    }
+
+    .time-display {
+      font-size: 0.8rem;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* Decision Area */
+    .decision-area {
+      display: flex;
+      flex-direction: column;
+      gap: 1.1rem;
+      text-align: center;
+    }
+
+    .decision-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #cbd5e1;
+    }
+
+    .button-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .choice-btn {
+      padding: 1.25rem 1rem;
+      border-radius: 14px;
+      font-size: 1.2rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: 2px solid var(--card-border);
+      background: #1e293b;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      user-select: none;
+    }
+
+    .choice-btn span.label-sub {
+      font-size: 0.8rem;
+      font-weight: 400;
+      color: var(--muted);
+    }
+
+    .choice-btn:hover:not(:disabled) {
+      border-color: #64748b;
+      background: #253347;
+      transform: translateY(-2px);
+    }
+
+    /* Button color changes on user click */
+    .choice-btn.selected-correct {
+      background: var(--success-bg) !important;
+      border-color: var(--success) !important;
+      color: #34d399 !important;
+      box-shadow: 0 0 25px rgba(16, 185, 129, 0.35);
+    }
+    .choice-btn.selected-correct span.label-sub {
+      color: #a7f3d0 !important;
+    }
+
+    .choice-btn.selected-wrong {
+      background: var(--danger-bg) !important;
+      border-color: var(--danger) !important;
+      color: #f87171 !important;
+      box-shadow: 0 0 25px rgba(239, 68, 68, 0.35);
+    }
+    .choice-btn.selected-wrong span.label-sub {
+      color: #fecaca !important;
+    }
+
+    .choice-btn.reveal-correct {
+      border-color: var(--success) !important;
+      color: #34d399 !important;
+      background: rgba(16, 185, 129, 0.08) !important;
+    }
+    .choice-btn.reveal-correct span.label-sub {
+      color: #a7f3d0 !important;
+    }
+
+    .choice-btn:disabled {
+      cursor: default;
+    }
+
+    /* Feedback Banner */
+    .feedback-banner {
+      display: none;
+      padding: 1.1rem 1.35rem;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      text-align: left;
+      animation: fadeIn 0.25s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .feedback-banner.success {
+      background: var(--success-bg);
+      border: 1px solid var(--success-border);
+      color: #a7f3d0;
+    }
+
+    .feedback-banner.danger {
+      background: var(--danger-bg);
+      border: 1px solid var(--danger-border);
+      color: #fecaca;
+    }
+
+    .feedback-banner strong {
+      display: block;
+      margin-bottom: 0.3rem;
+      font-size: 1.1rem;
+    }
+
+    /* Bottom Navigation Controls */
+    .card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 1rem;
+      border-top: 1px solid var(--card-border);
+    }
+
+    .nav-btn {
+      padding: 0.65rem 1.35rem;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--card-border);
+      background: #1e293b;
+      color: var(--text);
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      user-select: none;
+    }
+
+    .nav-btn:hover:not(:disabled) {
+      border-color: var(--accent);
+      background: #253347;
+    }
+
+    .nav-btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #0f172a;
+    }
+
+    .nav-btn.primary:hover:not(:disabled) {
+      background: #7dd3fc;
+      border-color: #7dd3fc;
+    }
+
+    .nav-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    /* Scoreboard Screen */
+    .scoreboard-container {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 1.5rem;
+      padding: 1rem 0;
+    }
+
+    .score-circle {
+      width: 145px;
+      height: 145px;
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle, rgba(56, 189, 248, 0.15) 0%, rgba(15, 23, 42, 0.8) 80%);
+      border: 3px solid var(--accent);
+      box-shadow: 0 0 30px rgba(56, 189, 248, 0.25);
+    }
+
+    .score-number {
+      font-size: 2.75rem;
+      font-weight: 800;
+      color: #f8fafc;
+      line-height: 1;
+    }
+
+    .score-total {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-top: 0.25rem;
+    }
+
+    .score-summary-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.5rem;
+      font-size: 0.92rem;
+    }
+
+    .score-summary-table th, .score-summary-table td {
+      padding: 0.8rem;
+      border-bottom: 1px solid var(--card-border);
+      text-align: left;
+    }
+
+    .score-summary-table th {
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.2rem 0.55rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .badge-real {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+
+    .badge-fake {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+    }
+
+    .badge-success { color: #34d399; }
+    .badge-fail { color: #f87171; }
+
+    /* Presenter hints */
+    .presenter-tips {
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--muted);
+      display: flex;
+      justify-content: center;
+      gap: 1.25rem;
+      flex-wrap: wrap;
+    }
+
+    .key-badge {
+      display: inline-block;
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      font-family: monospace;
+      color: #cbd5e1;
+      font-size: 0.75rem;
+    }
+
+    @media (max-width: 600px) {
+      .card { padding: 1.25rem; }
+      .button-group { grid-template-columns: 1fr; }
+      .stepper { gap: 0.25rem; }
+      .step-pill { padding: 0.35rem 0.65rem; font-size: 0.75rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <a href="../index.html" class="back-link">← Back to szelld.github.io</a>
+      <h1>Deepfake Audio Detection Demo</h1>
+      <p class="subtitle">Can you tell authentic speech apart from AI-generated voice clones?</p>
+    </header>
+
+    <!-- Navigation Stepper -->
+    <div class="stepper" id="stepper">
+      <!-- Generated dynamically -->
+    </div>
+
+    <!-- Active Sample Card -->
+    <main class="card" id="quizCard">
+      <div class="sample-header">
+        <span class="sample-tag" id="sampleTag">Sample 1 of 5</span>
+        <span class="score-badge" id="liveScore">Score: 0 / 0</span>
+      </div>
+
+      <!-- Audio Player -->
+      <div class="player-box">
+        <canvas id="waveformCanvas" class="waveform-canvas"></canvas>
+        <div class="player-controls">
+          <button class="play-btn" id="playBtn" title="Play / Pause Audio (Spacebar)">▶</button>
+          <div class="progress-bar-container">
+            <div class="progress-bar" id="progressBar">
+              <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="time-display">
+              <span id="currentTime">0:00</span>
+              <span id="durationTime">0:00</span>
+            </div>
+          </div>
+        </div>
+        <audio id="audioElement" preload="auto"></audio>
+      </div>
+
+      <!-- Guessing Buttons -->
+      <div class="decision-area">
+        <p class="decision-title">Select your classification:</p>
+        <div class="button-group">
+          <button class="choice-btn" id="btnReal" onclick="handleGuess(false)">
+            <span>🧑 Real Voice</span>
+            <span class="label-sub">Authentic human recording</span>
+          </button>
+          <button class="choice-btn" id="btnFake" onclick="handleGuess(true)">
+            <span>🤖 Deepfake</span>
+            <span class="label-sub">AI / synthetically generated</span>
+          </button>
+        </div>
+
+        <!-- Result / Feedback Banner -->
+        <div class="feedback-banner" id="feedbackBanner">
+          <strong id="feedbackTitle"></strong>
+          <p id="feedbackText"></p>
+        </div>
+      </div>
+
+      <!-- Bottom Card Nav -->
+      <div class="card-footer">
+        <button class="nav-btn" id="prevBtn" onclick="prevSample()" disabled>← Previous</button>
+        <button class="nav-btn primary" id="nextBtn" onclick="nextSample()">Next Sample →</button>
+      </div>
+    </main>
+
+    <!-- Scoreboard (End screen) -->
+    <section class="card scoreboard-container" id="scoreboardCard">
+      <h2>Demo Complete!</h2>
+      <p class="subtitle">Here is how the audience / test performed:</p>
+
+      <div class="score-circle">
+        <div class="score-number" id="finalScoreNum">0</div>
+        <div class="score-total" id="finalScoreTotal">out of 5 correct</div>
+      </div>
+
+      <table class="score-summary-table">
+        <thead>
+          <tr>
+            <th>Sample</th>
+            <th>Your Guess</th>
+            <th>Actual</th>
+            <th>Result</th>
+          </tr>
+        </thead>
+        <tbody id="summaryTableBody">
+          <!-- Filled dynamically -->
+        </tbody>
+      </table>
+
+      <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+        <button class="nav-btn primary" onclick="restartQuiz()">🔄 Restart Demo</button>
+        <a href="../index.html" class="nav-btn">Exit to Home</a>
+      </div>
+    </section>
+
+    <!-- Presenter Hints -->
+    <footer class="presenter-tips">
+      <span><span class="key-badge">Space</span> Play / Pause</span>
+      <span><span class="key-badge">1</span> / <span class="key-badge">R</span> Real</span>
+      <span><span class="key-badge">2</span> / <span class="key-badge">F</span> Deepfake</span>
+      <span><span class="key-badge">Enter</span> / <span class="key-badge">→</span> Next</span>
+    </footer>
+  </div>
+
+  <script>
+    /**
+     * SAMPLES CONFIGURATION
+     * You can drop your audio files into `deepfake/samples/` and update these paths.
+     * Supported formats: .flac, .wav, .mp3, .ogg
+     */
+    const SAMPLES = [
+      {
+        id: 1,
+        title: "Sample 1",
+        file: "samples/real1.flac",
+        isDeepfake: false,
+        clues: "Authentic human recording with natural breathing, pitch dynamics, and ambient room presence."
+      },
+      {
+        id: 2,
+        title: "Sample 2",
+        file: "samples/fake1.flac",
+        isDeepfake: true,
+        clues: "Synthetically synthesized speech. Notice characteristic acoustic artifacts or flat spectral transitions."
+      },
+      {
+        id: 3,
+        title: "Sample 3",
+        file: "samples/real2.flac",
+        isDeepfake: false,
+        clues: "Authentic human recording with organic micro-pauses and vocal fry."
+      },
+      {
+        id: 4,
+        title: "Sample 4",
+        file: "samples/fake2.flac",
+        isDeepfake: true,
+        clues: "AI-generated deepfake voice. Look out for robotic timbre or unnatural pronunciation tempo."
+      },
+      {
+        id: 5,
+        title: "Sample 5",
+        file: "samples/fake3.flac",
+        isDeepfake: true,
+        clues: "Deepfake synthesis clone. Pay attention to synthetic breathing patterns and unnatural sibilance."
+      }
+    ];
+
+    // State
+    let currentIndex = 0;
+    let userGuesses = Array(SAMPLES.length).fill(null); // null, or { guessedFake: bool, isCorrect: bool }
+    let isPlaying = false;
+
+    // DOM Elements
+    const quizCard = document.getElementById('quizCard');
+    const scoreboardCard = document.getElementById('scoreboardCard');
+    const stepper = document.getElementById('stepper');
+    const sampleTag = document.getElementById('sampleTag');
+    const liveScore = document.getElementById('liveScore');
+    const audioElement = document.getElementById('audioElement');
+    const playBtn = document.getElementById('playBtn');
+    const progressBar = document.getElementById('progressBar');
+    const progressFill = document.getElementById('progressFill');
+    const currentTimeEl = document.getElementById('currentTime');
+    const durationTimeEl = document.getElementById('durationTime');
+    const btnReal = document.getElementById('btnReal');
+    const btnFake = document.getElementById('btnFake');
+    const feedbackBanner = document.getElementById('feedbackBanner');
+    const feedbackTitle = document.getElementById('feedbackTitle');
+    const feedbackText = document.getElementById('feedbackText');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const canvas = document.getElementById('waveformCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let animationId = null;
+
+    function renderStepper() {
+      stepper.innerHTML = '';
+      SAMPLES.forEach((sample, i) => {
+        const pill = document.createElement('div');
+        pill.className = 'step-pill';
+        if (i === currentIndex && currentIndex < SAMPLES.length) {
+          pill.classList.add('active');
+        }
+
+        const guess = userGuesses[i];
+        let statusIcon = `${i + 1}`;
+        if (guess !== null) {
+          if (guess.isCorrect) {
+            pill.classList.add('correct');
+            statusIcon = `✓ ${i + 1}`;
+          } else {
+            pill.classList.add('wrong');
+            statusIcon = `✕ ${i + 1}`;
+          }
+        }
+
+        pill.textContent = statusIcon;
+        pill.title = `Go to Sample ${i + 1}`;
+        pill.onclick = () => goToSample(i);
+        stepper.appendChild(pill);
+      });
+
+      // Scoreboard pill
+      const scorePill = document.createElement('div');
+      scorePill.className = 'step-pill';
+      if (currentIndex === SAMPLES.length) {
+        scorePill.classList.add('active');
+      }
+      scorePill.textContent = 'Results 🏆';
+      scorePill.onclick = () => showScoreboard();
+      stepper.appendChild(scorePill);
+    }
+
+    function updateLiveScore() {
+      const answered = userGuesses.filter(g => g !== null);
+      const correct = answered.filter(g => g.isCorrect).length;
+      liveScore.textContent = `Score: ${correct} / ${answered.length}`;
+    }
+
+    function formatTime(secs) {
+      if (isNaN(secs) || !isFinite(secs)) return '0:00';
+      const m = Math.floor(secs / 60);
+      const s = Math.floor(secs % 60);
+      return `${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    function loadSample(index) {
+      if (index >= SAMPLES.length) {
+        showScoreboard();
+        return;
+      }
+
+      currentIndex = index;
+      quizCard.style.display = 'flex';
+      scoreboardCard.style.display = 'none';
+
+      const sample = SAMPLES[index];
+      sampleTag.textContent = `${sample.title} (${index + 1} of ${SAMPLES.length})`;
+      audioElement.src = sample.file;
+      audioElement.load();
+
+      // Reset controls
+      pauseAudio();
+      progressFill.style.width = '0%';
+      currentTimeEl.textContent = '0:00';
+      durationTimeEl.textContent = '0:00';
+
+      // Reset buttons
+      btnReal.className = 'choice-btn';
+      btnFake.className = 'choice-btn';
+      btnReal.disabled = false;
+      btnFake.disabled = false;
+      feedbackBanner.style.display = 'none';
+
+      // Check if already answered
+      const guess = userGuesses[index];
+      if (guess !== null) {
+        applyButtonState(guess.guessedFake, sample.isDeepfake);
+      }
+
+      prevBtn.disabled = index === 0;
+      nextBtn.textContent = (index === SAMPLES.length - 1) ? 'View Results 🏆' : 'Next Sample →';
+
+      renderStepper();
+      updateLiveScore();
+      drawWaveform(false);
+    }
+
+    function goToSample(index) {
+      if (index === SAMPLES.length) {
+        showScoreboard();
+      } else {
+        loadSample(index);
+      }
+    }
+
+    function prevSample() {
+      if (currentIndex > 0) {
+        loadSample(currentIndex - 1);
+      }
+    }
+
+    function nextSample() {
+      if (currentIndex < SAMPLES.length - 1) {
+        loadSample(currentIndex + 1);
+      } else {
+        showScoreboard();
+      }
+    }
+
+    // Playback
+    function toggleAudio() {
+      if (audioElement.paused) {
+        audioElement.play().then(() => {
+          isPlaying = true;
+          playBtn.textContent = '⏸';
+          startWaveformAnimation();
+        }).catch(err => {
+          console.warn('Playback error:', err);
+        });
+      } else {
+        pauseAudio();
+      }
+    }
+
+    function pauseAudio() {
+      audioElement.pause();
+      isPlaying = false;
+      playBtn.textContent = '▶';
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+      drawWaveform(false);
+    }
+
+    playBtn.addEventListener('click', toggleAudio);
+
+    audioElement.addEventListener('loadedmetadata', () => {
+      durationTimeEl.textContent = formatTime(audioElement.duration);
+    });
+
+    audioElement.addEventListener('timeupdate', () => {
+      if (audioElement.duration) {
+        const pct = (audioElement.currentTime / audioElement.duration) * 100;
+        progressFill.style.width = `${pct}%`;
+        currentTimeEl.textContent = formatTime(audioElement.currentTime);
+      }
+    });
+
+    audioElement.addEventListener('ended', () => {
+      pauseAudio();
+      progressFill.style.width = '100%';
+    });
+
+    progressBar.addEventListener('click', (e) => {
+      const rect = progressBar.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const pct = Math.max(0, Math.min(1, clickX / rect.width));
+      if (audioElement.duration) {
+        audioElement.currentTime = pct * audioElement.duration;
+      }
+    });
+
+    // Waveform visualization (works 100% reliably in both file:// and http/https)
+    function resizeCanvas() {
+      canvas.width = canvas.clientWidth * (window.devicePixelRatio || 1);
+      canvas.height = canvas.clientHeight * (window.devicePixelRatio || 1);
+      drawWaveform(isPlaying);
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    let phase = 0;
+    function drawWaveform(active) {
+      if (!ctx) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const w = canvas.width;
+      const h = canvas.height;
+      const mid = h / 2;
+      const bars = 44;
+      const barWidth = (w / bars) * 0.62;
+      const gap = (w / bars) * 0.38;
+
+      for (let i = 0; i < bars; i++) {
+        let barHeight;
+        if (active) {
+          // Dynamic animated wave with harmonic variation
+          const base = Math.sin((i / bars) * Math.PI);
+          const ripple = Math.sin(phase + i * 0.45) * 0.35 + Math.cos(phase * 1.5 + i * 0.25) * 0.25;
+          barHeight = Math.max(6, (base + ripple + 0.3) * (h * 0.42));
+        } else {
+          barHeight = Math.max(4, Math.sin((i / bars) * Math.PI) * (h * 0.28) + 4);
+        }
+
+        const x = i * (barWidth + gap);
+        ctx.fillStyle = active ? '#38bdf8' : '#334155';
+        ctx.beginPath();
+        if (ctx.roundRect) {
+          ctx.roundRect(x, mid - barHeight / 2, barWidth, barHeight, 3);
+        } else {
+          ctx.rect(x, mid - barHeight / 2, barWidth, barHeight);
+        }
+        ctx.fill();
+      }
+    }
+
+    function startWaveformAnimation() {
+      if (animationId) cancelAnimationFrame(animationId);
+      function loop() {
+        if (!isPlaying) return;
+        phase += 0.12;
+        drawWaveform(true);
+        animationId = requestAnimationFrame(loop);
+      }
+      loop();
+    }
+
+    // Guess Handling
+    function handleGuess(guessedFake) {
+      const sample = SAMPLES[currentIndex];
+      const isCorrect = (guessedFake === sample.isDeepfake);
+
+      userGuesses[currentIndex] = { guessedFake, isCorrect };
+
+      applyButtonState(guessedFake, sample.isDeepfake);
+      renderStepper();
+      updateLiveScore();
+    }
+
+    function applyButtonState(guessedFake, isDeepfake) {
+      btnReal.disabled = true;
+      btnFake.disabled = true;
+
+      const isCorrect = (guessedFake === isDeepfake);
+      const clickedBtn = guessedFake ? btnFake : btnReal;
+      const otherBtn = guessedFake ? btnReal : btnFake;
+
+      if (isCorrect) {
+        // Turns GREEN on correct choice
+        clickedBtn.classList.add('selected-correct');
+      } else {
+        // Turns RED on incorrect choice
+        clickedBtn.classList.add('selected-wrong');
+        // Highlight actual answer in green
+        otherBtn.classList.add('reveal-correct');
+      }
+
+      // Feedback banner
+      feedbackBanner.style.display = 'block';
+      if (isCorrect) {
+        feedbackBanner.className = 'feedback-banner success';
+        feedbackTitle.textContent = isDeepfake 
+          ? '🎯 Correct! It is an AI Deepfake.' 
+          : '🎯 Correct! It is an Authentic Human Voice.';
+      } else {
+        feedbackBanner.className = 'feedback-banner danger';
+        feedbackTitle.textContent = isDeepfake 
+          ? '❌ Incorrect! This audio was AI Generated.' 
+          : '❌ Incorrect! This is a Real Human Voice.';
+      }
+      feedbackText.textContent = SAMPLES[currentIndex].clues || '';
+    }
+
+    // Scoreboard
+    function showScoreboard() {
+      pauseAudio();
+      currentIndex = SAMPLES.length;
+      quizCard.style.display = 'none';
+      scoreboardCard.style.display = 'flex';
+      renderStepper();
+
+      const answered = userGuesses.filter(g => g !== null);
+      const correct = answered.filter(g => g.isCorrect).length;
+
+      document.getElementById('finalScoreNum').textContent = correct;
+      document.getElementById('finalScoreTotal').textContent = `out of ${SAMPLES.length} correct (${Math.round((correct / SAMPLES.length) * 100)}%)`;
+
+      const tbody = document.getElementById('summaryTableBody');
+      tbody.innerHTML = '';
+
+      SAMPLES.forEach((s, idx) => {
+        const guess = userGuesses[idx];
+        const tr = document.createElement('tr');
+
+        const userGuessText = guess === null 
+          ? '<span style="color:var(--muted)">Skipped</span>' 
+          : (guess.guessedFake ? '<span class="badge badge-fake">Deepfake</span>' : '<span class="badge badge-real">Real</span>');
+
+        const actualText = s.isDeepfake 
+          ? '<span class="badge badge-fake">Deepfake</span>' 
+          : '<span class="badge badge-real">Real</span>';
+
+        const resultText = guess === null 
+          ? '—' 
+          : (guess.isCorrect ? '<strong class="badge-success">✓ Correct</strong>' : '<strong class="badge-fail">✕ Incorrect</strong>');
+
+        tr.innerHTML = `
+          <td><strong>${s.title}</strong></td>
+          <td>${userGuessText}</td>
+          <td>${actualText}</td>
+          <td>${resultText}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function restartQuiz() {
+      userGuesses = Array(SAMPLES.length).fill(null);
+      loadSample(0);
+    }
+
+    // Presenter Keyboard Shortcuts
+    window.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        toggleAudio();
+      } else if (e.key === '1' || e.key.toLowerCase() === 'r') {
+        if (!btnReal.disabled && quizCard.style.display !== 'none') {
+          handleGuess(false);
+        }
+      } else if (e.key === '2' || e.key.toLowerCase() === 'f') {
+        if (!btnFake.disabled && quizCard.style.display !== 'none') {
+          handleGuess(true);
+        }
+      } else if (e.key === 'ArrowRight' || e.key === 'Enter') {
+        if (quizCard.style.display !== 'none') {
+          nextSample();
+        }
+      } else if (e.key === 'ArrowLeft') {
+        if (quizCard.style.display !== 'none') {
+          prevSample();
+        }
+      }
+    });
+
+    // Initialize
+    window.addEventListener('DOMContentLoaded', () => {
+      resizeCanvas();
+      loadSample(0);
+    });
+  </script>
+</body>
+</html>
