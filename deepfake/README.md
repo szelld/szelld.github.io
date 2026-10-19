@@ -23,7 +23,7 @@ const SAMPLES = [
     isDeepfake: true,
     clues: "Synthesized speech artifacts and robotic sibilance."
   },
-  // ... and so on for all 5 samples
+  // ... and so on for all 6 samples
 ];
 ```
 
