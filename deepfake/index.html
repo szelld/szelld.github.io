@@ -81,6 +81,50 @@
       font-size: 1rem;
     }
 
+    /* Dataset Tabs */
+    .set-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.35rem;
+      padding: 0.35rem;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+    }
+
+    .set-tab {
+      padding: 0.7rem 1rem;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.15rem;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+
+    .set-tab .label-sub {
+      font-size: 0.75rem;
+      font-weight: 400;
+    }
+
+    .set-tab:hover {
+      color: var(--text);
+      background: #253347;
+    }
+
+    .set-tab.active {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
     /* Stepper */
     .stepper {
       display: flex;
@@ -446,6 +490,11 @@
       margin-top: 0.25rem;
     }
 
+    .table-scroll {
+      width: 100%;
+      overflow-x: auto;
+    }
+
     .score-summary-table {
       width: 100%;
       border-collapse: collapse;
@@ -457,6 +506,11 @@
       padding: 0.8rem;
       border-bottom: 1px solid var(--card-border);
       text-align: left;
+    }
+
+    .score-summary-table td:first-child,
+    .score-summary-table td:nth-child(4) {
+      white-space: nowrap;
     }
 
     .score-summary-table th {
@@ -482,6 +536,44 @@
       background: rgba(239, 68, 68, 0.15);
       color: #f87171;
       border: 1px solid rgba(239, 68, 68, 0.4);
+    }
+
+    .attack-tag {
+      display: inline-block;
+      padding: 0.1rem 0.45rem;
+      margin-right: 0.35rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      font-family: monospace;
+      color: var(--accent);
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    .technique-cell {
+      color: #cbd5e1;
+      font-size: 0.85rem;
+      line-height: 1.45;
+    }
+
+    .technique-cell .detect-rate {
+      display: block;
+      margin-top: 0.25rem;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    .set-note {
+      width: 100%;
+      text-align: left;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      color: #cbd5e1;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 0.9rem 1.1rem;
     }
 
     .badge-success { color: #34d399; }
@@ -514,6 +606,8 @@
       .button-group { grid-template-columns: 1fr; }
       .stepper { gap: 0.25rem; }
       .step-pill { padding: 0.35rem 0.65rem; font-size: 0.75rem; }
+      .score-summary-table th, .score-summary-table td { padding: 0.55rem 0.4rem; }
+      .score-summary-table { font-size: 0.82rem; }
     }
   </style>
 </head>
@@ -524,6 +618,18 @@
       <h1>Deepfake Audio Detection Demo</h1>
       <p class="subtitle">Can you tell authentic speech apart from AI-generated voice clones?</p>
     </header>
+
+    <!-- Dataset Tabs -->
+    <div class="set-tabs" id="setTabs">
+      <button class="set-tab" data-set="train" onclick="switchSet('train')">
+        <span>Training set</span>
+        <span class="label-sub">Attacks the model learned from</span>
+      </button>
+      <button class="set-tab" data-set="eval" onclick="switchSet('eval')">
+        <span>Evaluation set</span>
+        <span class="label-sub">Unseen attacks</span>
+      </button>
+    </div>
 
     <!-- Navigation Stepper -->
     <div class="stepper" id="stepper">
@@ -585,7 +691,7 @@
 
     <!-- Scoreboard (End screen) -->
     <section class="card scoreboard-container" id="scoreboardCard">
-      <h2>Demo Complete!</h2>
+      <h2 id="scoreboardTitle">Demo Complete!</h2>
       <p class="subtitle">Here is how the audience / test performed:</p>
 
       <div class="score-circle">
@@ -593,6 +699,7 @@
         <div class="score-total" id="finalScoreTotal">out of 6 correct</div>
       </div>
 
+      <div class="table-scroll">
       <table class="score-summary-table">
         <thead>
           <tr>
@@ -600,12 +707,16 @@
             <th>Your Guess</th>
             <th>Actual</th>
             <th>Result</th>
+            <th>How it was made</th>
           </tr>
         </thead>
         <tbody id="summaryTableBody">
           <!-- Filled dynamically -->
         </tbody>
       </table>
+      </div>
+
+      <p class="set-note" id="setNote"></p>
 
       <div style="display: flex; gap: 1rem; margin-top: 1rem;">
         <button class="nav-btn primary" onclick="restartQuiz()">🔄 Restart Demo</button>
@@ -619,64 +730,163 @@
       <span><span class="key-badge">1</span> / <span class="key-badge">R</span> Real</span>
       <span><span class="key-badge">2</span> / <span class="key-badge">F</span> Deepfake</span>
       <span><span class="key-badge">Enter</span> / <span class="key-badge">→</span> Next</span>
+      <span><span class="key-badge">T</span> / <span class="key-badge">E</span> Train / Eval set</span>
     </footer>
   </div>
 
   <script>
     /**
      * SAMPLES CONFIGURATION
-     * You can drop your audio files into `deepfake/samples/` and update these paths.
+     * Two sample sets from ASVspoof 2019 LA: `samples/train/` and `samples/eval/`.
      * Supported formats: .flac, .wav, .mp3, .ogg
+     * `attack` / `technique` are shown on the results page; `detectRate` is the
+     * share of that attack type our GFL-FAD model flagged as fake (eval only).
      */
-    const SAMPLES = [
-      {
-        id: 1,
-        title: "Sample 1",
-        file: "samples/real1.flac",
-        isDeepfake: false,
-        clues: "Authentic human recording with natural breathing, pitch dynamics, and ambient room presence."
-      },
-      {
-        id: 2,
-        title: "Sample 2",
-        file: "samples/fake1.flac",
-        isDeepfake: true,
-        clues: "Synthetically synthesized speech. Notice characteristic acoustic artifacts or flat spectral transitions."
-      },
-      {
-        id: 3,
-        title: "Sample 3",
-        file: "samples/real2.flac",
-        isDeepfake: false,
-        clues: "Authentic human recording with organic micro-pauses and vocal fry."
-      },
-      {
-        id: 4,
-        title: "Sample 4",
-        file: "samples/fake2.flac",
-        isDeepfake: true,
-        clues: "AI-generated deepfake voice. Look out for robotic timbre or unnatural pronunciation tempo."
-      },
-      {
-        id: 5,
-        title: "Sample 5",
-        file: "samples/fake3.flac",
-        isDeepfake: true,
-        clues: "Deepfake synthesis clone. Pay attention to synthetic breathing patterns and unnatural sibilance."
-      },
-      {
-        id: 6,
-        title: "Sample 6",
-        file: "samples/fake4.flac",
-        isDeepfake: true,
-        clues: "Neural text-to-speech deepfake. Very natural prosody; listen for overly smooth, uniform intonation."
-      }
-    ];
+    const REAL_TECHNIQUE = "Bona fide human recording (VCTK corpus speaker).";
 
-    // State
+    const SETS = {
+      train: {
+        name: "Training set",
+        note: "These fakes use attacks A01–A06, the same generation methods the model was trained on. " +
+              "On these known attacks the model is practically perfect (development EER close to 0%).",
+        samples: [
+          {
+            title: "Sample 1",
+            file: "samples/train/real1.flac",
+            isDeepfake: false,
+            clues: "Authentic human recording with natural breathing, pitch dynamics, and ambient room presence.",
+            technique: REAL_TECHNIQUE
+          },
+          {
+            title: "Sample 2",
+            file: "samples/train/fake1.flac",
+            isDeepfake: true,
+            clues: "Classic vocoder-based speech synthesis. Notice the buzzy, slightly metallic timbre.",
+            attack: "A02",
+            technique: "Text-to-speech with the WORLD vocoder (statistical parametric synthesis)."
+          },
+          {
+            title: "Sample 3",
+            file: "samples/train/real2.flac",
+            isDeepfake: false,
+            clues: "Authentic human recording with organic micro-pauses and vocal fry.",
+            technique: REAL_TECHNIQUE
+          },
+          {
+            title: "Sample 4",
+            file: "samples/train/fake2.flac",
+            isDeepfake: true,
+            clues: "Voice conversion: a different speaker's recording was transformed into this voice.",
+            attack: "A05",
+            technique: "Voice conversion: variational autoencoder (VAE) + WORLD vocoder."
+          },
+          {
+            title: "Sample 5",
+            file: "samples/train/fake3.flac",
+            isDeepfake: true,
+            clues: "Voice conversion: listen for a muffled, filtered quality in the voice.",
+            attack: "A06",
+            technique: "Voice conversion: GMM-UBM model with spectral filtering of the source speech."
+          },
+          {
+            title: "Sample 6",
+            file: "samples/train/fake4.flac",
+            isDeepfake: true,
+            clues: "Neural text-to-speech deepfake. Listen for overly smooth, uniform intonation.",
+            attack: "A01",
+            technique: "Neural text-to-speech with a WaveNet vocoder."
+          }
+        ]
+      },
+      eval: {
+        name: "Evaluation set",
+        note: "These fakes use attacks A07–A19, generation methods the model never saw during training. " +
+              "A09 is caught almost every time, but A17 and A18 slip past the model almost completely. " +
+              "Both are voice conversion attacks that start from real human speech; A17 even filters " +
+              "the real waveform directly, so most of the natural signal is preserved.",
+        samples: [
+          {
+            title: "Sample 1",
+            file: "samples/eval/real1.flac",
+            isDeepfake: false,
+            clues: "Authentic human recording with natural breathing, pitch dynamics, and ambient room presence.",
+            technique: REAL_TECHNIQUE
+          },
+          {
+            title: "Sample 2",
+            file: "samples/eval/fake1.flac",
+            isDeepfake: true,
+            clues: "Synthetically synthesized speech. Notice characteristic acoustic artifacts or flat spectral transitions.",
+            attack: "A09",
+            technique: "Text-to-speech: LSTM acoustic model + Vocaine vocoder.",
+            detectRate: "99.98%"
+          },
+          {
+            title: "Sample 3",
+            file: "samples/eval/real2.flac",
+            isDeepfake: false,
+            clues: "Authentic human recording with organic micro-pauses and vocal fry.",
+            technique: REAL_TECHNIQUE
+          },
+          {
+            title: "Sample 4",
+            file: "samples/eval/fake2.flac",
+            isDeepfake: true,
+            clues: "AI-generated deepfake voice. Look out for robotic timbre or unnatural pronunciation tempo.",
+            attack: "A17",
+            technique: "Voice conversion: VAE + direct waveform filtering of a real recording.",
+            detectRate: "1.61%"
+          },
+          {
+            title: "Sample 5",
+            file: "samples/eval/fake3.flac",
+            isDeepfake: true,
+            clues: "Deepfake synthesis clone. Pay attention to synthetic breathing patterns and unnatural sibilance.",
+            attack: "A18",
+            technique: "Non-parallel voice conversion: i-vector/PLDA transfer learning + MFCC vocoder.",
+            detectRate: "4.13%"
+          },
+          {
+            title: "Sample 6",
+            file: "samples/eval/fake4.flac",
+            isDeepfake: true,
+            clues: "Neural text-to-speech deepfake. Very natural prosody; listen for overly smooth, uniform intonation.",
+            attack: "A10",
+            technique: "End-to-end text-to-speech: Tacotron 2 + WaveRNN neural vocoder.",
+            detectRate: "51.38%"
+          }
+        ]
+      }
+    };
+
+    // State: each set keeps its own position and guesses
+    Object.values(SETS).forEach(set => {
+      set.currentIndex = 0;
+      set.userGuesses = Array(set.samples.length).fill(null); // null, or { guessedFake: bool, isCorrect: bool }
+    });
+
+    let activeSetKey = 'train';
+    let SAMPLES = SETS.train.samples;
     let currentIndex = 0;
-    let userGuesses = Array(SAMPLES.length).fill(null); // null, or { guessedFake: bool, isCorrect: bool }
+    let userGuesses = SETS.train.userGuesses;
     let isPlaying = false;
+
+    function switchSet(key) {
+      if (!SETS[key]) return;
+      const prev = SETS[activeSetKey];
+      prev.currentIndex = currentIndex;
+
+      activeSetKey = key;
+      const set = SETS[key];
+      SAMPLES = set.samples;
+      userGuesses = set.userGuesses;
+
+      document.querySelectorAll('.set-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.set === key);
+      });
+
+      goToSample(set.currentIndex);
+    }
 
     // DOM Elements
     const quizCard = document.getElementById('quizCard');
@@ -981,6 +1191,8 @@
       const answered = userGuesses.filter(g => g !== null);
       const correct = answered.filter(g => g.isCorrect).length;
 
+      document.getElementById('scoreboardTitle').textContent = `${SETS[activeSetKey].name}: Results`;
+      document.getElementById('setNote').textContent = SETS[activeSetKey].note;
       document.getElementById('finalScoreNum').textContent = correct;
       document.getElementById('finalScoreTotal').textContent = `out of ${SAMPLES.length} correct (${Math.round((correct / SAMPLES.length) * 100)}%)`;
 
@@ -1003,11 +1215,17 @@
           ? '—' 
           : (guess.isCorrect ? '<strong class="badge-success">✓ Correct</strong>' : '<strong class="badge-fail">✕ Incorrect</strong>');
 
+        const techniqueText = `
+          ${s.attack ? `<span class="attack-tag">${s.attack}</span>` : ''}${s.technique || ''}
+          ${s.detectRate ? `<span class="detect-rate">Our model detects ${s.detectRate} of ${s.attack} fakes</span>` : ''}
+        `;
+
         tr.innerHTML = `
           <td><strong>${s.title}</strong></td>
           <td>${userGuessText}</td>
           <td>${actualText}</td>
           <td>${resultText}</td>
+          <td class="technique-cell">${techniqueText}</td>
         `;
         tbody.appendChild(tr);
       });
@@ -1015,6 +1233,7 @@
 
     function restartQuiz() {
       userGuesses = Array(SAMPLES.length).fill(null);
+      SETS[activeSetKey].userGuesses = userGuesses;
       loadSample(0);
     }
 
@@ -1041,13 +1260,17 @@
         if (quizCard.style.display !== 'none') {
           prevSample();
         }
+      } else if (e.key.toLowerCase() === 't') {
+        switchSet('train');
+      } else if (e.key.toLowerCase() === 'e') {
+        switchSet('eval');
       }
     });
 
     // Initialize
     window.addEventListener('DOMContentLoaded', () => {
       resizeCanvas();
-      loadSample(0);
+      switchSet('train');
     });
   </script>
 </body>
